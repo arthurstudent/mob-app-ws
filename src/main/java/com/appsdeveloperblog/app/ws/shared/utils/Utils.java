@@ -10,19 +10,17 @@ public class Utils {
     private final Random RANDOM = new SecureRandom();
     private int Return;
 
+    private static final int BOUND = 9;
 
-    public int generateUserId(int length) {
+
+    public long generateId(int length) {
         return generateRandomString(length);
     }
-    public int generateAddressId(int length) {
-        return generateRandomString(length);
-    }
-
-    private int generateRandomString(int length) {
-
+    private long generateRandomString(int length) {
+        StringBuilder stringBuilder = new StringBuilder();
         for (int i = 0; i < length; i++) {
-            Return+=RANDOM.nextInt(1000000000);
+            stringBuilder.append(RANDOM.nextInt(BOUND + 1));
         }
-        return Return;
+        return Integer.parseInt(stringBuilder.toString());
     }
 }

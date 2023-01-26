@@ -26,6 +26,6 @@ public class AddressEntity implements Serializable {
     @Column(length = 15, nullable = false)
     private String type;
     @ManyToOne(cascade = CascadeType.ALL)
-    private UserEntity userDetails;
+    private UserEntity user;
 
 }

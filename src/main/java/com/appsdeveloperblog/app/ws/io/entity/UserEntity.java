@@ -41,6 +41,10 @@ public class UserEntity implements Serializable {
     @JoinColumn(name = "user_id")
     private List<AddressEntity> addressEntityList = new ArrayList<>();
 
+    public void setAddress(List<AddressEntity> addressEntityList) {
+        this.addressEntityList = addressEntityList;
+        addressEntityList.forEach(article -> article.setUser(this));
+    }
     public UserEntity() {
     }
 }

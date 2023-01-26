@@ -43,7 +43,7 @@ public class UserEntity implements Serializable {
 
     public void setAddress(List<AddressEntity> addressEntityList) {
         this.addressEntityList = addressEntityList;
-        addressEntityList.forEach(article -> article.setUser(this));
+        addressEntityList.forEach(address -> address.setUser(this));
     }
     public UserEntity() {
     }

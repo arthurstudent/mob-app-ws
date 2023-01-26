@@ -41,7 +41,14 @@ public class UserServiceImpl implements UserService {
 
         if (userRepository.findUserByEmail(user.getEmail()) != null) throw new RuntimeException("Already exist");
 
-        ModelMapper modelMapper = new ModelMapper();
+//        modelMapper1.getConfiguration().setAmbiguityIgnored(true);
+//        PropertyMap<AddressDTO, AddressEntity> clientPropertyMap = new PropertyMap<>() {
+//            @Override
+//            protected void configure() {
+//                skip(source.getUserDetails());
+//            }
+//        };
+//        modelMapper1.addMappings(clientPropertyMap);
 //        modelMapper.getConfiguration()
 //                .setFieldMatchingEnabled(true)
 //                .setFieldAccessLevel(Configuration.AccessLevel.PRIVATE);
@@ -52,24 +59,46 @@ public class UserServiceImpl implements UserService {
 //            addressDTO.setUserDetails(user);
             addressDTO.setAddressId(String.valueOf(utils.generateAddressId(100)));
             user.getAddresses().set(i, addressDTO);
-//            AddressEntity addressEntity = modelMapper.map(user.getAddresses().get(i), AddressEntity.class);
-//            addressEntityList.add(addressEntity);
         }
 
 
+        ModelMapper modelMapper = new ModelMapper();
         UserEntity userEntity = modelMapper.map(user, UserEntity.class);
 
         userEntity.setEncryptedPassword(bCryptPasswordEncoder.encode(user.getPassword()));
         userEntity.setUserId(String.valueOf(utils.generateUserId(100)));
 
+
+//        ModelMapper modelMapper1 = new ModelMapper();
+//        modelMapper1.getConfiguration().setAmbiguityIgnored(true);
+//        PropertyMap<AddressDTO, AddressEntity> clientPropertyMap = new PropertyMap<>() {
+//            @Override
+//            protected void configure() {
+//                skip(source.getUserDetails());
+//            }
+//        };
+//        modelMapper1.addMappings(clientPropertyMap);
+//        TypeMap<AddressDTO, AddressEntity> propertyMapper = modelMapper1.createTypeMap(AddressDTO.class, AddressEntity.class);
+//        propertyMapper.addMappings(mapper -> mapper.skip(AddressEntity::setUserDetails));
+//        List<AddressEntity> addressEntityList = user.getAddresses()
+//                .stream()
+//                .map(addressDTO -> modelMapper.map(addressDTO, AddressEntity.class))
+//                .collect(Collectors.toList());
+
+
         List<AddressEntity> addressEntityList
                 = modelMapper.map(user.getAddresses(),
                 new TypeToken<List<AddressEntity>>() {}.getType());
 
-        userEntity.setAddressEntityList(addressEntityList);
+        userEntity.setAddress(addressEntityList);
 
         UserEntity storedUserDetails = userRepository.save(userEntity);
-        return modelMapper.map(storedUserDetails, UserDto.class);
+
+        UserDto returnedUserDto = modelMapper.map(storedUserDetails, UserDto.class);
+        returnedUserDto.setAddresses(modelMapper
+                .map(storedUserDetails.getAddressEntityList(),
+                new TypeToken<List<AddressDTO>>() {}.getType()));
+        return returnedUserDto;
     }
 
     @Override

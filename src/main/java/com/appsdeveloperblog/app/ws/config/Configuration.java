@@ -10,11 +10,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 @org.springframework.context.annotation.Configuration
 public class Configuration {
 
-    @Autowired
-    Environment environment;
-
     @Bean(name = "AppProperties")
-    public AppProperties getAppProperties(){
+    public AppProperties getAppProperties(Environment environment){
         return new AppProperties(environment);
     }
 

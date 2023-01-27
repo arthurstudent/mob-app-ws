@@ -2,10 +2,11 @@ package com.appsdeveloperblog.app.ws.ui.model.response;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.hateoas.RepresentationModel;
 
 @Getter
 @Setter
-public class AddressesRest {
+public class AddressesRest extends RepresentationModel<AddressesRest> {
     private String addressId;
     private String city;
     private String country;

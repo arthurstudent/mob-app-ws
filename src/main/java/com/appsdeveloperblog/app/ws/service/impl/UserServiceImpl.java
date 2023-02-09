@@ -3,7 +3,9 @@ package com.appsdeveloperblog.app.ws.service.impl;
 
 import com.appsdeveloperblog.app.ws.exceptions.UserServiceException;
 import com.appsdeveloperblog.app.ws.io.entity.AddressEntity;
+import com.appsdeveloperblog.app.ws.io.entity.PasswordResetTokenEntity;
 import com.appsdeveloperblog.app.ws.io.entity.UserEntity;
+import com.appsdeveloperblog.app.ws.io.repositories.PasswordResetTokenRepository;
 import com.appsdeveloperblog.app.ws.io.repositories.UserRepository;
 import com.appsdeveloperblog.app.ws.service.UserService;
 import com.appsdeveloperblog.app.ws.shared.dto.AddressDTO;
@@ -32,6 +34,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     UserRepository userRepository;
+
+    @Autowired
+    PasswordResetTokenRepository passwordResetTokenRepository;
     @Autowired
     Utils utils;
     @Autowired
@@ -92,7 +97,8 @@ public class UserServiceImpl implements UserService {
 
         List<AddressEntity> addressEntityList
                 = modelMapper.map(user.getAddresses(),
-                new TypeToken<List<AddressEntity>>() {}.getType());
+                new TypeToken<List<AddressEntity>>() {
+                }.getType());
 
         userEntity.setAddress(addressEntityList);
 
@@ -101,7 +107,8 @@ public class UserServiceImpl implements UserService {
         UserDto returnedUserDto = modelMapper.map(storedUserDetails, UserDto.class);
         returnedUserDto.setAddresses(modelMapper
                 .map(storedUserDetails.getAddressEntityList(),
-                new TypeToken<List<AddressDTO>>() {}.getType()));
+                        new TypeToken<List<AddressDTO>>() {
+                        }.getType()));
 
         new AmazonSES().verifyEmail(returnedUserDto);
         return returnedUserDto;
@@ -150,7 +157,7 @@ public class UserServiceImpl implements UserService {
     public List<UserDto> getListUsers(int page, int limit) {
         List<UserDto> returnValue = new ArrayList<>();
 
-        if(page>0) page = page - 1;
+        if (page > 0) page = page - 1;
         Pageable pageable = PageRequest.of(page, limit);
         Page<UserEntity> userPage = userRepository.findAll(pageable);
         List<UserEntity> users = userPage.getContent();
@@ -167,9 +174,9 @@ public class UserServiceImpl implements UserService {
 
         UserEntity userEntity = userRepository.findUserByEmailVerificationToken(token);
 
-        if (userEntity!=null){
+        if (userEntity != null) {
             boolean hasExpired = Utils.hasTokenExpired(token);
-            if (!hasExpired){
+            if (!hasExpired) {
                 userEntity.setEmailVerificationToken(null);
                 userEntity.setEmailVerificationStatus(Boolean.TRUE);
                 userRepository.save(userEntity);
@@ -180,10 +187,66 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public boolean passwordResetRequest(String email) {
+
+        UserEntity userEntity = userRepository.findUserByEmail(email);
+
+        if (userEntity == null) {
+            return false;
+        }
+
+        String token = new Utils().generatePasswordResetToken(userEntity.getUserId());
+
+        PasswordResetTokenEntity passwordResetTokenEntity = new PasswordResetTokenEntity();
+        passwordResetTokenEntity.setToken(token);
+        passwordResetTokenEntity.setUserDetails(userEntity);
+        passwordResetTokenRepository.save(passwordResetTokenEntity);
+
+        return new AmazonSES().sendPasswordResetRequest(
+                userEntity.getFirstName(),
+                userEntity.getEmail(),
+                token);
+
+    }
+
+    @Override
+    public boolean resetPassword(String token, String password) {
+        boolean returnValue = false;
+
+        if (Utils.hasTokenExpired(token)) {
+            return false;
+        }
+
+        PasswordResetTokenEntity passwordResetTokenEntity = passwordResetTokenRepository.findByToken(token);
+
+        if (passwordResetTokenEntity == null) {
+            return false;
+        }
+
+        // Prepare new password
+        String encodedPassword = bCryptPasswordEncoder.encode(password);
+
+        // Update User password in database
+        UserEntity userEntity = passwordResetTokenEntity.getUserDetails();
+        userEntity.setEncryptedPassword(encodedPassword);
+        UserEntity savedUserEntity = userRepository.save(userEntity);
+
+        // Verify if password was saved successfully
+        if (savedUserEntity.getEncryptedPassword().equalsIgnoreCase(encodedPassword)) {
+            returnValue = true;
+        }
+
+        // Remove Password Reset token from database
+        passwordResetTokenRepository.delete(passwordResetTokenEntity);
+
+        return returnValue;
+    }
+
+    @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         UserEntity userByEmail = userRepository.findUserByEmail(email);
         if (userByEmail == null) throw new UsernameNotFoundException(email);
-       // return new User(userByEmail.getEmail(), userByEmail.getEncryptedPassword(), new ArrayList<>());
+        // return new User(userByEmail.getEmail(), userByEmail.getEncryptedPassword(), new ArrayList<>());
         return new User(userByEmail.getEmail(), userByEmail.getEncryptedPassword(),
                 userByEmail.getEmailVerificationStatus(),
                 true, true, true, new ArrayList<>());

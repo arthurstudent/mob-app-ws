@@ -19,4 +19,8 @@ public interface UserService extends UserDetailsService {
     List<UserDto> getListUsers(int page, int limit);
 
     boolean verifyEmailToken(String token);
+
+    boolean passwordResetRequest(String email);
+
+    boolean resetPassword(String token, String password);
 }

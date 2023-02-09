@@ -21,18 +21,24 @@ public class WebSecurity extends WebSecurityConfigurerAdapter {
 
     @Override
     public void configure (HttpSecurity httpSecurity) throws Exception {
-        httpSecurity.csrf().disable().authorizeRequests()
-            .antMatchers(HttpMethod.POST, SecurityConstants.SIGN_UP_URL)
-            .permitAll()
+        httpSecurity.csrf()
+                .disable()
+                .authorizeRequests()
+                .antMatchers(HttpMethod.POST, SecurityConstants.SIGN_UP_URL)
+                .permitAll()
                 .antMatchers(HttpMethod.GET, SecurityConstants.VERIFICATION_EMAIL_URL)
                 .permitAll()
-            .anyRequest()
-            .authenticated()
+                .antMatchers(HttpMethod.POST, SecurityConstants.PASSWORD_RESET_REQUEST_URL)
+                .permitAll()
+                .antMatchers(HttpMethod.POST, SecurityConstants.PASSWORD_RESET_URL)
+                .permitAll()
+                .anyRequest()
+                .authenticated()
                 .and()
-            .addFilter(getAuthenticationFilter())
-            .addFilter(new AuthorizationFilter(authenticationManager()))
-            .sessionManagement()
-            .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+                .addFilter(getAuthenticationFilter())
+                .addFilter(new AuthorizationFilter(authenticationManager()))
+                .sessionManagement()
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
     }
 
     @Override

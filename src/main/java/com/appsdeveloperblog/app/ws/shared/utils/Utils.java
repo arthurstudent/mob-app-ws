@@ -37,11 +37,19 @@ public class Utils {
         }
         return Integer.parseInt(stringBuilder.toString());
     }
-
+// refactor
     public String generateEmailVerificationToken(long generateId) {
         return Jwts.builder()
                 .setSubject(String.valueOf(generateId))
                 .setExpiration(new Date(System.currentTimeMillis() + SecurityConstants.EXPIRATION_TIME))
+                .signWith(SignatureAlgorithm.HS512, SecurityConstants.getTokenSecret())
+                .compact();
+    }
+
+    public String generatePasswordResetToken(String userId) {
+        return Jwts.builder()
+                .setSubject(String.valueOf(userId))
+                .setExpiration(new Date(System.currentTimeMillis() + SecurityConstants.PASSWORD_RESET_EXPIRATION_TIME))
                 .signWith(SignatureAlgorithm.HS512, SecurityConstants.getTokenSecret())
                 .compact();
     }

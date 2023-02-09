@@ -107,7 +107,8 @@ public class UserController {
         if (addressDTOS != null && !addressDTOS.isEmpty()) {
             addressesRestList = modelMapper.map(addressDTOS, new TypeToken<List<AddressesRest>>() {
             }.getType());
-            for (AddressesRest addressRest: addressesRestList) {
+
+            for (AddressesRest addressRest : addressesRestList) {
                 Link selfLink = WebMvcLinkBuilder
                         .linkTo(WebMvcLinkBuilder.methodOn(UserController.class).getUserAddress(userId, addressRest.getAddressId()))
                         .withSelfRel();
@@ -136,5 +137,21 @@ public class UserController {
         AddressesRest addressesRest = new ModelMapper().map(addressDTO, AddressesRest.class);
 
         return EntityModel.of(addressesRest, Arrays.asList(userLink, userAddressesLink, selfLink));
+    }
+
+    @GetMapping(path = "/email-verification", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
+    public OperationStatusModel verifyEmailToken(@RequestParam(value = "token") String token) {
+        OperationStatusModel operationStatusModel = new OperationStatusModel();
+        operationStatusModel.setOperationName(RequestOperationName.VERIFY_EMAIL.name());
+
+        boolean isVerified = userService.verifyEmailToken(token);
+        operationStatusModel.setOperationResult(RequestOperationStatus.SUCCESS.name());
+
+        if (isVerified) {
+            operationStatusModel.setOperationResult(RequestOperationStatus.SUCCESS.name());
+        } else {
+            operationStatusModel.setOperationResult(RequestOperationStatus.ERROR.name());
+        }
+        return operationStatusModel;
     }
 }

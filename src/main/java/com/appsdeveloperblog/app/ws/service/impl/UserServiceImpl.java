@@ -8,6 +8,7 @@ import com.appsdeveloperblog.app.ws.io.repositories.UserRepository;
 import com.appsdeveloperblog.app.ws.service.UserService;
 import com.appsdeveloperblog.app.ws.shared.dto.AddressDTO;
 import com.appsdeveloperblog.app.ws.shared.dto.UserDto;
+import com.appsdeveloperblog.app.ws.shared.utils.AmazonSES;
 import com.appsdeveloperblog.app.ws.shared.utils.Utils;
 import com.appsdeveloperblog.app.ws.ui.model.response.ErrorMessages;
 import org.modelmapper.ModelMapper;
@@ -66,7 +67,10 @@ public class UserServiceImpl implements UserService {
         UserEntity userEntity = modelMapper.map(user, UserEntity.class);
 
         userEntity.setEncryptedPassword(bCryptPasswordEncoder.encode(user.getPassword()));
-        userEntity.setUserId(String.valueOf(utils.generateId(8)));
+        long generateId = utils.generateId(8);
+        userEntity.setUserId(String.valueOf(generateId));
+        userEntity.setEmailVerificationToken(utils.generateEmailVerificationToken(generateId));
+        userEntity.setEmailVerificationStatus(false);
 
 
 //        ModelMapper modelMapper1 = new ModelMapper();
@@ -98,6 +102,8 @@ public class UserServiceImpl implements UserService {
         returnedUserDto.setAddresses(modelMapper
                 .map(storedUserDetails.getAddressEntityList(),
                 new TypeToken<List<AddressDTO>>() {}.getType()));
+
+        new AmazonSES().verifyEmail(returnedUserDto);
         return returnedUserDto;
     }
 
@@ -157,9 +163,29 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public boolean verifyEmailToken(String token) {
+
+        UserEntity userEntity = userRepository.findUserByEmailVerificationToken(token);
+
+        if (userEntity!=null){
+            boolean hasExpired = Utils.hasTokenExpired(token);
+            if (!hasExpired){
+                userEntity.setEmailVerificationToken(null);
+                userEntity.setEmailVerificationStatus(Boolean.TRUE);
+                userRepository.save(userEntity);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         UserEntity userByEmail = userRepository.findUserByEmail(email);
         if (userByEmail == null) throw new UsernameNotFoundException(email);
-        return new User(userByEmail.getEmail(), userByEmail.getEncryptedPassword(), new ArrayList<>());
+       // return new User(userByEmail.getEmail(), userByEmail.getEncryptedPassword(), new ArrayList<>());
+        return new User(userByEmail.getEmail(), userByEmail.getEncryptedPassword(),
+                userByEmail.getEmailVerificationStatus(),
+                true, true, true, new ArrayList<>());
     }
 }

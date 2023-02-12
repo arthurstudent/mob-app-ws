@@ -2,6 +2,7 @@ package com.appsdeveloperblog.app.ws.shared.utils;
 
 import com.appsdeveloperblog.app.ws.security.SecurityConstants;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.stereotype.Component;
@@ -12,36 +13,42 @@ import java.util.Random;
 
 @Component
 public class Utils {
-    private final Random RANDOM = new SecureRandom();
-    private static final int BOUND = 9;
+    private final Random secureRandom = new SecureRandom();
+    private static final int BOUND = 10;
 
     public static boolean hasTokenExpired(String token) {
-        Claims claims = Jwts.parser()
-                .setSigningKey(SecurityConstants.getTokenSecret())
-                .parseClaimsJws(token).getBody();
 
-        Date tokenExpirationDate = claims.getExpiration();
-        Date todayDate = new Date();
+        try {
+            Claims claims = Jwts.parser()
+                    .setSigningKey(SecurityConstants.getTokenSecret())
+                    .parseClaimsJws(token).getBody();
 
-        return tokenExpirationDate.before(todayDate);
-    }
+            Date tokenExpirationDate = claims.getExpiration();
+            Date todayDate = new Date();
+            return tokenExpirationDate.before(todayDate);
 
-
-    public long generateId(int length) {
-        return generateRandomString(length);
-    }
-    private long generateRandomString(int length) {
-        StringBuilder stringBuilder = new StringBuilder();
-        for (int i = 0; i < length; i++) {
-            stringBuilder.append(RANDOM.nextInt(BOUND + 1));
+        } catch (ExpiredJwtException jwtException) {
+            return true;
         }
-        return Integer.parseInt(stringBuilder.toString());
     }
-// refactor
-    public String generateEmailVerificationToken(long generateId) {
+
+    public String generateId() {
+        return generateRandomString();
+    }
+
+    private String generateRandomString() {
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 0; i < BOUND; i++) {
+            stringBuilder.append(secureRandom.nextInt(BOUND));
+        }
+        return stringBuilder.toString();
+    }
+
+    // TODO simplify in one method
+    public String generateEmailVerificationToken(String generateId) {
         return Jwts.builder()
-                .setSubject(String.valueOf(generateId))
-                .setExpiration(new Date(System.currentTimeMillis() + SecurityConstants.EXPIRATION_TIME))
+                .setSubject(generateId)
+                .setExpiration(new Date(System.currentTimeMillis() + SecurityConstants.EMAIL_VERIFICATION_EXPIRATION_TIME))
                 .signWith(SignatureAlgorithm.HS512, SecurityConstants.getTokenSecret())
                 .compact();
     }

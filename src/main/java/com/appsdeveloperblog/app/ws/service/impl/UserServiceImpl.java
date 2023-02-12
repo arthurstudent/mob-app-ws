@@ -41,11 +41,13 @@ public class UserServiceImpl implements UserService {
     Utils utils;
     @Autowired
     BCryptPasswordEncoder bCryptPasswordEncoder;
+    @Autowired
+    AmazonSES amazonSES;
 
     @Override
     public UserDto createUser(UserDto user) {
 
-        if (userRepository.findUserByEmail(user.getEmail()) != null) throw new RuntimeException("Already exist");
+        if (userRepository.findUserByEmail(user.getEmail()) != null) throw new UserServiceException("Already exist");
 
 //        modelMapper1.getConfiguration().setAmbiguityIgnored(true);
 //        PropertyMap<AddressDTO, AddressEntity> clientPropertyMap = new PropertyMap<>() {
@@ -63,7 +65,7 @@ public class UserServiceImpl implements UserService {
         for (int i = 0; i < user.getAddresses().size(); i++) {
             AddressDTO addressDTO = user.getAddresses().get(i);
 //            addressDTO.setUserDetails(user);
-            addressDTO.setAddressId(String.valueOf(utils.generateId(8)));
+            addressDTO.setAddressId(String.valueOf(utils.generateId()));
             user.getAddresses().set(i, addressDTO);
         }
 
@@ -72,8 +74,8 @@ public class UserServiceImpl implements UserService {
         UserEntity userEntity = modelMapper.map(user, UserEntity.class);
 
         userEntity.setEncryptedPassword(bCryptPasswordEncoder.encode(user.getPassword()));
-        long generateId = utils.generateId(8);
-        userEntity.setUserId(String.valueOf(generateId));
+        String generateId = utils.generateId();
+        userEntity.setUserId(generateId);
         userEntity.setEmailVerificationToken(utils.generateEmailVerificationToken(generateId));
         userEntity.setEmailVerificationStatus(false);
 
@@ -100,7 +102,7 @@ public class UserServiceImpl implements UserService {
                 new TypeToken<List<AddressEntity>>() {
                 }.getType());
 
-        userEntity.setAddress(addressEntityList);
+        userEntity.setAddresses(addressEntityList);
 
         UserEntity storedUserDetails = userRepository.save(userEntity);
 
@@ -110,7 +112,7 @@ public class UserServiceImpl implements UserService {
                         new TypeToken<List<AddressDTO>>() {
                         }.getType()));
 
-        new AmazonSES().verifyEmail(returnedUserDto);
+        amazonSES.verifyEmail(returnedUserDto);
         return returnedUserDto;
     }
 
@@ -124,7 +126,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserDto getUserById(String userId) {
+    public UserDto getUserByUserId(String userId) {
         UserDto returnValue = new UserDto();
         UserEntity userByEmail = userRepository.findByUserId(userId);
         if (userByEmail == null) throw new UserServiceException(ErrorMessages.NO_RECORD_FOUND.getErrorMessage());
@@ -202,7 +204,7 @@ public class UserServiceImpl implements UserService {
         passwordResetTokenEntity.setUserDetails(userEntity);
         passwordResetTokenRepository.save(passwordResetTokenEntity);
 
-        return new AmazonSES().sendPasswordResetRequest(
+        return amazonSES.sendPasswordResetRequest(
                 userEntity.getFirstName(),
                 userEntity.getEmail(),
                 token);

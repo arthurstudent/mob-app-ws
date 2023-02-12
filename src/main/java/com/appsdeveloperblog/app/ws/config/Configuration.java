@@ -2,6 +2,7 @@ package com.appsdeveloperblog.app.ws.config;
 
 import com.appsdeveloperblog.app.ws.SpringApplicationContext;
 import com.appsdeveloperblog.app.ws.security.AppProperties;
+import com.appsdeveloperblog.app.ws.shared.utils.AmazonSES;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
@@ -23,6 +24,10 @@ public class Configuration {
     @Bean
     public SpringApplicationContext springApplicationContext(){
         return new SpringApplicationContext();
+    }
+    @Bean
+    public AmazonSES amazonSES(){
+        return new AmazonSES();
     }
 
 }

@@ -36,11 +36,13 @@ public class UserController {
         this.addressService = addressService;
     }
 
-    @GetMapping(path = "/{userId}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
+    @GetMapping(path = "/{userId}",
+            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
     public UserRest getUser(@PathVariable String userId) {
         UserRest returnValue = new UserRest();
-        UserDto userDto = userService.getUserById(userId);
+        UserDto userDto = userService.getUserByUserId(userId);
         BeanUtils.copyProperties(userDto, returnValue);
+        // TODO replace BeanUtils with ModelMapper to see user's addresses
         return returnValue;
     }
 
@@ -99,7 +101,8 @@ public class UserController {
         return restList;
     }
 
-    @GetMapping(path = "/{userId}/addresses", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
+    @GetMapping(path = "/{userId}/addresses",
+            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
     public CollectionModel<AddressesRest> getUserAddresses(@PathVariable String userId) {
 
         List<AddressesRest> addressesRestList = new ArrayList<>();
@@ -124,7 +127,8 @@ public class UserController {
         return CollectionModel.of(addressesRestList, userLink, selfLink);
     }
 
-    @GetMapping(path = "/{userId}/addresses/{addressId}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
+    @GetMapping(path = "/{userId}/addresses/{addressId}",
+            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
     public EntityModel<AddressesRest> getUserAddress(@PathVariable String userId, @PathVariable String addressId) {
 
         AddressDTO addressDTO = addressService.getAddress(addressId);
@@ -141,7 +145,8 @@ public class UserController {
         return EntityModel.of(addressesRest, Arrays.asList(userLink, userAddressesLink, selfLink));
     }
 
-    @GetMapping(path = "/email-verification", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
+    @GetMapping(path = "/email-verification",
+            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
     public OperationStatusModel verifyEmailToken(@RequestParam(value = "token") String token) {
         OperationStatusModel operationStatusModel = new OperationStatusModel();
         operationStatusModel.setOperationName(RequestOperationName.VERIFY_EMAIL.name());
@@ -156,6 +161,7 @@ public class UserController {
         }
         return operationStatusModel;
     }
+
     @PostMapping(path = "/password-reset-request", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
     public OperationStatusModel passwordReset(@RequestBody PasswordResetRequestModel passwordResetRequestModel) {
         OperationStatusModel operationStatusModel = new OperationStatusModel();
@@ -186,8 +192,7 @@ public class UserController {
         returnValue.setOperationName(RequestOperationName.PASSWORD_RESET.name());
         returnValue.setOperationResult(RequestOperationStatus.ERROR.name());
 
-        if(isPasswordUpdated)
-        {
+        if (isPasswordUpdated) {
             returnValue.setOperationResult(RequestOperationStatus.SUCCESS.name());
         }
 

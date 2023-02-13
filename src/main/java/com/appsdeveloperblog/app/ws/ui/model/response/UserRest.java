@@ -12,5 +12,5 @@ public class UserRest {
     private String firstName;
     private String lastName;
     private String email;
-    private List<AddressesRest> addressesRestList;
+    private List<AddressesRest> addresses;
 }

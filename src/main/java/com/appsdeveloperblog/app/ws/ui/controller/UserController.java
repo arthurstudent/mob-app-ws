@@ -60,7 +60,7 @@ public class UserController {
 
         UserDto createdUser = userService.createUser(userDto);
         returnValue = modelMapper.map(createdUser, UserRest.class);
-        returnValue.setAddressesRestList(modelMapper
+        returnValue.setAddresses(modelMapper
                 .map(createdUser.getAddresses(), new TypeToken<List<AddressesRest>>() {
                 }.getType()));
         return returnValue;

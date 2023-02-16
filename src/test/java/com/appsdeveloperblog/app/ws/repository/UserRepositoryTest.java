@@ -3,8 +3,10 @@ package com.appsdeveloperblog.app.ws.repository;
 import com.appsdeveloperblog.app.ws.io.entity.AddressEntity;
 import com.appsdeveloperblog.app.ws.io.entity.UserEntity;
 import com.appsdeveloperblog.app.ws.io.repositories.UserRepository;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,17 +22,23 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class UserRepositoryTest {
 
     @Autowired
     UserRepository userRepository;
 
-    static boolean recordsCreated = false;
+    boolean recordsCreated = false;
 
-//    @BeforeEach
-//    void setUp() {
-//        if (!recordsCreated) createRecords();
-//    }
+    @BeforeEach
+    void setUp() {
+        if (!recordsCreated) createRecords();
+    }
+
+    @AfterAll
+    void clear() {
+        userRepository.deleteAll();
+    }
 
     @Test
     final void testGetUser() {
@@ -44,9 +52,8 @@ class UserRepositoryTest {
     }
 
     @Test
-    final void testFindUserByFirstName()
-    {
-        String firstName="Sergey";
+    final void testFindUserByFirstName() {
+        String firstName = "Sergey";
         List<UserEntity> users = userRepository.findUserByFirstName(firstName);
         assertNotNull(users);
         assertEquals(2, users.size());
@@ -56,9 +63,8 @@ class UserRepositoryTest {
     }
 
     @Test
-    final void testFindUserByLastName()
-    {
-        String lastName="Kargopolov";
+    final void testFindUserByLastName() {
+        String lastName = "Kargopolov";
         List<UserEntity> users = userRepository.findUserByLastName(lastName);
         assertNotNull(users);
         assertEquals(2, users.size());
@@ -68,9 +74,8 @@ class UserRepositoryTest {
     }
 
     @Test
-    final void testFindUsersByKeyword()
-    {
-        String keyword="erg";
+    final void testFindUsersByKeyword() {
+        String keyword = "erg";
         List<UserEntity> users = userRepository.findUsersByKeyword(keyword);
         assertNotNull(users);
         assertEquals(2, users.size());
@@ -83,9 +88,8 @@ class UserRepositoryTest {
     }
 
     @Test
-    final void testFindUserFirstNameAndLastNameByKeyword()
-    {
-        String keyword="erg";
+    final void testFindUserFirstNameAndLastNameByKeyword() {
+        String keyword = "erg";
         List<Object[]> users = userRepository.findUserFirstNameAndLastNameByKeyword(keyword);
         assertNotNull(users);
         assertEquals(2, users.size());
@@ -102,8 +106,7 @@ class UserRepositoryTest {
     }
 
     @Test
-    final void testUpdateUserEmailVerificationStatus()
-    {
+    final void testUpdateUserEmailVerificationStatus() {
         boolean newEmailVerificationStatus = true;
         userRepository.updateUserEmailVerificationStatus(newEmailVerificationStatus, "1144332211");
 
@@ -114,6 +117,46 @@ class UserRepositoryTest {
         assertEquals(storedEmailVerificationStatus, newEmailVerificationStatus);
 
     }
+
+    @Test
+    final void testFindUserEntityByUserId() {
+        String userId = "1111222233";
+        UserEntity userEntity = userRepository.findUserEntityByUserId(userId);
+
+        assertNotNull(userEntity);
+        assertEquals(userEntity.getUserId(), userId);
+    }
+
+    @Test
+    final void testGetUserEntityFullNameById() {
+        String userId = "1111222233";
+        List<Object[]> records = userRepository.getUserEntityFullNameById(userId);
+
+        assertNotNull(records);
+        assertEquals(1, records.size());
+
+        Object[] userDetails = records.get(0);
+
+        String firstName = String.valueOf(userDetails[0]);
+        String lastName = String.valueOf(userDetails[1]);
+
+        assertNotNull(firstName);
+        assertNotNull(lastName);
+    }
+
+    @Test
+    final void testUpdateUserEntityEmailVerificationStatus() {
+        boolean newEmailVerificationStatus = true;
+        userRepository.updateUserEntityEmailVerificationStatus(newEmailVerificationStatus, "1111222233");
+
+        UserEntity storedUserDetails = userRepository.findByUserId("1111222233");
+
+        boolean storedEmailVerificationStatus = storedUserDetails.getEmailVerificationStatus();
+
+        assertEquals(storedEmailVerificationStatus, newEmailVerificationStatus);
+
+    }
+
     private void createRecords() {
         // Prepare User Entity
         UserEntity userEntity = new UserEntity();

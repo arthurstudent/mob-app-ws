@@ -2,7 +2,6 @@ package com.appsdeveloperblog.app.ws.shared;
 
 import com.appsdeveloperblog.app.ws.shared.utils.Utils;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,14 +41,11 @@ class UtilsTest {
         assertFalse(hasTokenExpired);
     }
     @Test
-    @Disabled("wait a few days as for now token is not expired")
     final void testHasTokenExpired() {
-        String generateEmailVerificationToken = "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI4NTY4NTY4MCIsImV4cCI6MTY3NjgyMjE3M30.luO5jOLLpSRKcxXbS0QFBmWRBFPajb5PlxRlfFGAaPaDfFqaltO0LgfmpRveuPFX9xE_WUCz73QAWGLR6kmRSg";
+        String generateEmailVerificationToken = "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI1MDEzNzk3MDIyIiwiZXhwIjoxNjc2Mjk1OTE3fQ.cJX9ewSCiuNCZmEjnQhXxhKJAXb7OuT2Guh8D6xpKniSSIM1pTe1DW_xw-8MBwnvs5QVNjzNabwGA925dTC84g";
 
         boolean hasTokenExpired = Utils.hasTokenExpired(generateEmailVerificationToken);
 
         assertTrue(hasTokenExpired);
     }
-
-
 }

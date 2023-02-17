@@ -11,6 +11,9 @@ import com.appsdeveloperblog.app.ws.ui.model.response.AddressesRest;
 import com.appsdeveloperblog.app.ws.ui.model.response.OperationStatusModel;
 import com.appsdeveloperblog.app.ws.ui.model.response.RequestOperationStatus;
 import com.appsdeveloperblog.app.ws.ui.model.response.UserRest;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
 import org.springframework.beans.BeanUtils;
@@ -27,7 +30,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/users")
-//@CrossOrigin(origins = "*")
 public class UserController {
     final UserService userService;
     final AddressService addressService;
@@ -37,6 +39,11 @@ public class UserController {
         this.addressService = addressService;
     }
 
+    @ApiOperation(value = "The Get User Details Web Service Endpoint",
+            notes = "This Web Service Endpoint returns User Details. Use public user id in an URI path. For example: users/1122334455")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "authorization", value = "${userController.authorizationHeader.description}", paramType = "header")
+    })
     @GetMapping(path = "/{userId}",
             produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
     public UserRest getUser(@PathVariable String userId) {
@@ -47,48 +54,11 @@ public class UserController {
         return returnValue;
     }
 
-    @PostMapping(consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
-            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
-    public UserRest createUser(@RequestBody UserDetailsRequestModel userDetails) {
-        UserRest returnValue;
-//        if(userDetails.getFirstName().isEmpty())
-//            throw new UserServiceException(ErrorMessages.MISSING_REQUIRED_FIELD.getErrorMessage());
-//        UserDto userDto = new UserDto();
-//        BeanUtils.copyProperties(userDetails, userDto);
-
-        ModelMapper modelMapper = new ModelMapper();
-        UserDto userDto = modelMapper.map(userDetails, UserDto.class);
-
-        UserDto createdUser = userService.createUser(userDto);
-        returnValue = modelMapper.map(createdUser, UserRest.class);
-        returnValue.setAddresses(modelMapper
-                .map(createdUser.getAddresses(), new TypeToken<List<AddressesRest>>() {
-                }.getType()));
-        return returnValue;
-    }
-
-    @PutMapping(path = "/{userId}",
-            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
-            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
-    public UserRest updateUser(@PathVariable String userId, @RequestBody UserDetailsRequestModel userDetails) {
-        UserRest returnValue = new UserRest();
-        UserDto userDto = new UserDto();
-        BeanUtils.copyProperties(userDetails, userDto);
-        UserDto updatedUser = userService.updateUser(userId, userDto);
-        BeanUtils.copyProperties(updatedUser, returnValue);
-        return returnValue;
-    }
-
-    @DeleteMapping(path = "/{userId}",
-            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
-    public OperationStatusModel deleteUser(@PathVariable String userId) {
-        OperationStatusModel operationStatusModel = new OperationStatusModel();
-        operationStatusModel.setOperationName(RequestOperationName.DELETE.name());
-        userService.deleteUser(userId);
-        operationStatusModel.setOperationResult(RequestOperationStatus.SUCCESS.name());
-        return operationStatusModel;
-    }
-
+    @ApiOperation(value = "The Get Users Details Web Service Endpoint",
+            notes = "This Web Service Endpoint returns Users Details")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "authorization", value = "${userController.authorizationHeader.description}", paramType = "header")
+    })
     @GetMapping(produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
     public List<UserRest> getUsers(@RequestParam(value = "page", defaultValue = "0") int page,
                                    @RequestParam(value = "limit", defaultValue = "25") int limit) {
@@ -102,6 +72,11 @@ public class UserController {
         return restList;
     }
 
+    @ApiOperation(value = "The Get all User's addresses Web Service Endpoint",
+            notes = "This Web Service Endpoint returns all user's addresses. Use public user id in an URI path. For example: users/1122334455/addresses")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "authorization", value = "${userController.authorizationHeader.description}", paramType = "header")
+    })
     @GetMapping(path = "/{userId}/addresses",
             produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
     public CollectionModel<AddressesRest> getUserAddresses(@PathVariable String userId) {
@@ -128,6 +103,12 @@ public class UserController {
         return CollectionModel.of(addressesRestList, userLink, selfLink);
     }
 
+    @ApiOperation(value = "The Get User's address Web Service Endpoint",
+            notes = "This Web Service Endpoint returns user's address. Use public user id in an URI path. " +
+                    "For example: users/1122334455/address/1122334455")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "authorization", value = "${userController.authorizationHeader.description}", paramType = "header")
+    })
     @GetMapping(path = "/{userId}/addresses/{addressId}",
             produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
     public EntityModel<AddressesRest> getUserAddress(@PathVariable String userId, @PathVariable String addressId) {
@@ -146,6 +127,10 @@ public class UserController {
         return EntityModel.of(addressesRest, Arrays.asList(userLink, userAddressesLink, selfLink));
     }
 
+    @ApiOperation(value = "Verify email Web Service Endpoint",
+            notes = "This Web Service Endpoint returns status of email verification. " +
+                    "Use token from email in an URI path. " +
+                    "For example: users/email-verification?token=eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI5NDY3Mzc2NTUwIiwiZXhwIjoxNjc2Mjk5MjIyfQ.Sz935Mf7OzTwRhs3TZLPyQ2ucFjoU2eJxCKFIH3pNcjEtt9qvYYfNXjJ3oI4hyvCpORXmhJ_quiiXLdzlHdaKQ")
     @GetMapping(path = "/email-verification",
             produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
     public OperationStatusModel verifyEmailToken(@RequestParam(value = "token") String token) {
@@ -163,6 +148,30 @@ public class UserController {
         return operationStatusModel;
     }
 
+    @ApiOperation(value = "The Post User Web Service Endpoint",
+            notes = "This Web Service Endpoint create user. Use Json or xml type to provide required fields")
+    @PostMapping(consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
+            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
+    public UserRest createUser(@RequestBody UserDetailsRequestModel userDetails) {
+        UserRest returnValue;
+//        if(userDetails.getFirstName().isEmpty())
+//            throw new UserServiceException(ErrorMessages.MISSING_REQUIRED_FIELD.getErrorMessage());
+//        UserDto userDto = new UserDto();
+//        BeanUtils.copyProperties(userDetails, userDto);
+
+        ModelMapper modelMapper = new ModelMapper();
+        UserDto userDto = modelMapper.map(userDetails, UserDto.class);
+
+        UserDto createdUser = userService.createUser(userDto);
+        returnValue = modelMapper.map(createdUser, UserRest.class);
+        returnValue.setAddresses(modelMapper
+                .map(createdUser.getAddresses(), new TypeToken<List<AddressesRest>>() {
+                }.getType()));
+        return returnValue;
+    }
+
+    @ApiOperation(value = "The Post password reset Web Service Endpoint",
+            notes = "This Web Service Endpoint uses for sending password reset request. Use Json or xml type to provide required fields")
     @PostMapping(path = "/password-reset-request", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
     public OperationStatusModel passwordReset(@RequestBody PasswordResetRequestModel passwordResetRequestModel) {
         OperationStatusModel operationStatusModel = new OperationStatusModel();
@@ -179,7 +188,8 @@ public class UserController {
 
         return operationStatusModel;
     }
-
+    @ApiOperation(value = "The Post Web Service Endpoint",
+            notes = "This Web Service Endpoint uses to reset password. Use Json or xml type to provide required fields")
     @PostMapping(path = "/password-reset",
             consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
     )
@@ -198,5 +208,37 @@ public class UserController {
         }
 
         return returnValue;
+    }
+    @ApiOperation(value = "The Put User Web Service Endpoint",
+            notes = "This Web Service Endpoint uses for updating user's details. Use public user id in an URI path. " +
+                    "For example: users/1122334455/address/1122334455")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "authorization", value = "${userController.authorizationHeader.description}", paramType = "header")
+    })
+    @PutMapping(path = "/{userId}",
+            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
+            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
+    public UserRest updateUser(@PathVariable String userId, @RequestBody UserDetailsRequestModel userDetails) {
+        UserRest returnValue = new UserRest();
+        UserDto userDto = new UserDto();
+        BeanUtils.copyProperties(userDetails, userDto);
+        UserDto updatedUser = userService.updateUser(userId, userDto);
+        BeanUtils.copyProperties(updatedUser, returnValue);
+        return returnValue;
+    }
+    @ApiOperation(value = "The Delete User Web Service Endpoint",
+            notes = "This Web Service Endpoint uses for deleting user. Use public user id in an URI path. " +
+                    "For example: users/1122334455/address/1122334455")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "authorization", value = "${userController.authorizationHeader.description}", paramType = "header")
+    })
+    @DeleteMapping(path = "/{userId}",
+            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
+    public OperationStatusModel deleteUser(@PathVariable String userId) {
+        OperationStatusModel operationStatusModel = new OperationStatusModel();
+        operationStatusModel.setOperationName(RequestOperationName.DELETE.name());
+        userService.deleteUser(userId);
+        operationStatusModel.setOperationResult(RequestOperationStatus.SUCCESS.name());
+        return operationStatusModel;
     }
 }

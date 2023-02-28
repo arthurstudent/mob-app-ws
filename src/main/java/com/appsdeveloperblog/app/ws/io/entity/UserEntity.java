@@ -6,6 +6,7 @@ import lombok.Setter;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 @Entity
@@ -42,10 +43,17 @@ public class UserEntity implements Serializable {
     @JoinColumn(name = "user_id")
     private List<AddressEntity> addressEntityList = new ArrayList<>();
 
+    @ManyToMany(cascade = CascadeType.PERSIST, fetch = FetchType.EAGER)
+    @JoinTable(name = "users_roles",
+            joinColumns = @JoinColumn(name = "users_id", referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "roles_id", referencedColumnName = "id"))
+    private List<RoleEntity> roles;
+
     public void setAddresses(List<AddressEntity> addressEntityList) {
         this.addressEntityList = addressEntityList;
         addressEntityList.forEach(address -> address.setUser(this));
     }
+
     public UserEntity() {
     }
 }

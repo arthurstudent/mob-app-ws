@@ -1,9 +1,11 @@
 package com.appsdeveloperblog.app.ws.security;
 
+import com.appsdeveloperblog.app.ws.io.repositories.UserRepository;
 import com.appsdeveloperblog.app.ws.service.UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -16,19 +18,25 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.List;
 
+@EnableGlobalMethodSecurity(securedEnabled = true, prePostEnabled = true)
 @EnableWebSecurity
 public class WebSecurity extends WebSecurityConfigurerAdapter {
     private final UserService userService;
+
     private final BCryptPasswordEncoder cryptPasswordEncoder;
 
-    public WebSecurity(UserService userService, BCryptPasswordEncoder cryptPasswordEncoder) {
+    private final UserRepository userRepository;
+
+    public WebSecurity(UserService userService, BCryptPasswordEncoder cryptPasswordEncoder, UserRepository userRepository) {
         this.userService = userService;
         this.cryptPasswordEncoder = cryptPasswordEncoder;
+        this.userRepository = userRepository;
     }
 
     @Override
-    public void configure (HttpSecurity httpSecurity) throws Exception {
-        httpSecurity.cors()
+    public void configure(HttpSecurity httpSecurity) throws Exception {
+        httpSecurity
+                .cors()
                 .and()
                 .csrf()
                 .disable()
@@ -49,7 +57,7 @@ public class WebSecurity extends WebSecurityConfigurerAdapter {
                 .authenticated()
                 .and()
                 .addFilter(getAuthenticationFilter())
-                .addFilter(new AuthorizationFilter(authenticationManager()))
+                .addFilter(new AuthorizationFilter(authenticationManager(), userRepository))
                 .sessionManagement()
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 
@@ -68,12 +76,11 @@ public class WebSecurity extends WebSecurityConfigurerAdapter {
     }
 
     @Bean
-    public CorsConfigurationSource corsConfigurationSource()
-    {
+    public CorsConfigurationSource corsConfigurationSource() {
         final CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOrigins(List.of("*"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE","OPTIONS"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowCredentials(true);
         configuration.setAllowedHeaders(List.of("*"));
 

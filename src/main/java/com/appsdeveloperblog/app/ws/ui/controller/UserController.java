@@ -4,6 +4,7 @@ import com.appsdeveloperblog.app.ws.service.AddressService;
 import com.appsdeveloperblog.app.ws.service.UserService;
 import com.appsdeveloperblog.app.ws.shared.dto.AddressDTO;
 import com.appsdeveloperblog.app.ws.shared.dto.UserDto;
+import com.appsdeveloperblog.app.ws.shared.utils.Roles;
 import com.appsdeveloperblog.app.ws.ui.model.request.PasswordResetModel;
 import com.appsdeveloperblog.app.ws.ui.model.request.PasswordResetRequestModel;
 import com.appsdeveloperblog.app.ws.ui.model.request.UserDetailsRequestModel;
@@ -22,10 +23,13 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 
 @RestController
@@ -44,6 +48,7 @@ public class UserController {
     @ApiImplicitParams({
             @ApiImplicitParam(name = "authorization", value = "${userController.authorizationHeader.description}", paramType = "header")
     })
+    @PostAuthorize("hasRole('ADMIN') or returnObject.userId == principal.publicUserId")
     @GetMapping(path = "/{userId}",
             produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
     public UserRest getUser(@PathVariable String userId) {
@@ -161,6 +166,7 @@ public class UserController {
 
         ModelMapper modelMapper = new ModelMapper();
         UserDto userDto = modelMapper.map(userDetails, UserDto.class);
+        userDto.setRoles(new HashSet<>(List.of(Roles.ROLE_USER.name())));
 
         UserDto createdUser = userService.createUser(userDto);
         returnValue = modelMapper.map(createdUser, UserRest.class);
@@ -211,7 +217,7 @@ public class UserController {
     }
     @ApiOperation(value = "The Put User Web Service Endpoint",
             notes = "This Web Service Endpoint uses for updating user's details. Use public user id in an URI path. " +
-                    "For example: users/1122334455/address/1122334455")
+                    "For example: users/1122334455")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "authorization", value = "${userController.authorizationHeader.description}", paramType = "header")
     })
@@ -228,10 +234,11 @@ public class UserController {
     }
     @ApiOperation(value = "The Delete User Web Service Endpoint",
             notes = "This Web Service Endpoint uses for deleting user. Use public user id in an URI path. " +
-                    "For example: users/1122334455/address/1122334455")
+                    "For example: users/1122334455")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "authorization", value = "${userController.authorizationHeader.description}", paramType = "header")
     })
+    @PreAuthorize("hasRole('ROLE_ADMIN') or #userId == principal.publicUserId")
     @DeleteMapping(path = "/{userId}",
             produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
     public OperationStatusModel deleteUser(@PathVariable String userId) {

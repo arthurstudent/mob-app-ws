@@ -28,29 +28,29 @@ public class AuthenticationFilter extends UsernamePasswordAuthenticationFilter {
     }
 
     @Override
-    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response){
+    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) {
 
-        try{
+        try {
             UserLoginRequestModel creds = new ObjectMapper().readValue(request.getInputStream(), UserLoginRequestModel.class);
             return authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
-                creds.getEmail(),
-                creds.getPassword(),
-                new ArrayList<>()));
-        }catch (IOException e){
+                    creds.getEmail(),
+                    creds.getPassword(),
+                    new ArrayList<>()));
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response,
-        FilterChain filterChain, Authentication authentication){
-        String userName = ((User) authentication.getPrincipal()).getUsername();
+                                            FilterChain filterChain, Authentication authentication) {
+        String userName = ((UserPrincipal) authentication.getPrincipal()).getUsername();
 
         String token = Jwts.builder()
-            .setSubject(userName)
-            .setExpiration(new Date(System.currentTimeMillis() + SecurityConstants.EXPIRATION_TIME))
-            .signWith(SignatureAlgorithm.HS512, SecurityConstants.getTokenSecret())
-            .compact();
+                .setSubject(userName)
+                .setExpiration(new Date(System.currentTimeMillis() + SecurityConstants.EXPIRATION_TIME))
+                .signWith(SignatureAlgorithm.HS512, SecurityConstants.getTokenSecret())
+                .compact();
 
         UserService userService = (UserService) SpringApplicationContext.getBean("userServiceImpl");
         UserDto userDto = userService.getUser(userName);

@@ -44,19 +44,10 @@ public class Utils {
         return stringBuilder.toString();
     }
 
-    // TODO simplify in one method
-    public String generateEmailVerificationToken(String generateId) {
+    public String generateToken(String generateId, long securityConstants) {
         return Jwts.builder()
                 .setSubject(generateId)
-                .setExpiration(new Date(System.currentTimeMillis() + SecurityConstants.EMAIL_VERIFICATION_EXPIRATION_TIME))
-                .signWith(SignatureAlgorithm.HS512, SecurityConstants.getTokenSecret())
-                .compact();
-    }
-
-    public String generatePasswordResetToken(String userId) {
-        return Jwts.builder()
-                .setSubject(String.valueOf(userId))
-                .setExpiration(new Date(System.currentTimeMillis() + SecurityConstants.PASSWORD_RESET_EXPIRATION_TIME))
+                .setExpiration(new Date(System.currentTimeMillis() + securityConstants))
                 .signWith(SignatureAlgorithm.HS512, SecurityConstants.getTokenSecret())
                 .compact();
     }

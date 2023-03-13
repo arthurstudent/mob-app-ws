@@ -54,8 +54,13 @@ public class UserController {
     public UserRest getUser(@PathVariable String userId) {
         UserRest returnValue = new UserRest();
         UserDto userDto = userService.getUserByUserId(userId);
-        BeanUtils.copyProperties(userDto, returnValue);
-        // TODO replace BeanUtils with ModelMapper to see user's addresses
+
+        ModelMapper modelMapper = new ModelMapper();
+        returnValue = modelMapper.map(userDto, UserRest.class);
+        returnValue.setAddresses(modelMapper
+                .map(userDto.getAddresses(), new TypeToken<List<AddressesRest>>() {
+                }.getType()));
+
         return returnValue;
     }
 
@@ -82,6 +87,7 @@ public class UserController {
     @ApiImplicitParams({
             @ApiImplicitParam(name = "authorization", value = "${userController.authorizationHeader.description}", paramType = "header")
     })
+    @PreAuthorize("hasRole('ROLE_ADMIN') or #userId == principal.publicUserId")
     @GetMapping(path = "/{userId}/addresses",
             produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
     public CollectionModel<AddressesRest> getUserAddresses(@PathVariable String userId) {
@@ -114,6 +120,7 @@ public class UserController {
     @ApiImplicitParams({
             @ApiImplicitParam(name = "authorization", value = "${userController.authorizationHeader.description}", paramType = "header")
     })
+    @PreAuthorize("hasRole('ROLE_ADMIN') or #userId == principal.publicUserId")
     @GetMapping(path = "/{userId}/addresses/{addressId}",
             produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
     public EntityModel<AddressesRest> getUserAddress(@PathVariable String userId, @PathVariable String addressId) {
@@ -194,6 +201,7 @@ public class UserController {
 
         return operationStatusModel;
     }
+
     @ApiOperation(value = "The Post Web Service Endpoint",
             notes = "This Web Service Endpoint uses to reset password. Use Json or xml type to provide required fields")
     @PostMapping(path = "/password-reset",
@@ -215,12 +223,14 @@ public class UserController {
 
         return returnValue;
     }
+
     @ApiOperation(value = "The Put User Web Service Endpoint",
             notes = "This Web Service Endpoint uses for updating user's details. Use public user id in an URI path. " +
                     "For example: users/1122334455")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "authorization", value = "${userController.authorizationHeader.description}", paramType = "header")
     })
+    @PreAuthorize("hasRole('ROLE_ADMIN') or #userId == principal.publicUserId")
     @PutMapping(path = "/{userId}",
             consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
             produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
@@ -232,6 +242,7 @@ public class UserController {
         BeanUtils.copyProperties(updatedUser, returnValue);
         return returnValue;
     }
+
     @ApiOperation(value = "The Delete User Web Service Endpoint",
             notes = "This Web Service Endpoint uses for deleting user. Use public user id in an URI path. " +
                     "For example: users/1122334455")

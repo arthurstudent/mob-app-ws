@@ -9,6 +9,7 @@ import com.appsdeveloperblog.app.ws.io.entity.UserEntity;
 import com.appsdeveloperblog.app.ws.io.repositories.PasswordResetTokenRepository;
 import com.appsdeveloperblog.app.ws.io.repositories.RoleRepository;
 import com.appsdeveloperblog.app.ws.io.repositories.UserRepository;
+import com.appsdeveloperblog.app.ws.security.SecurityConstants;
 import com.appsdeveloperblog.app.ws.security.UserPrincipal;
 import com.appsdeveloperblog.app.ws.service.UserService;
 import com.appsdeveloperblog.app.ws.shared.dto.AddressDTO;
@@ -19,7 +20,6 @@ import com.appsdeveloperblog.app.ws.ui.model.response.ErrorMessages;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -29,30 +29,34 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 @Service
 public class UserServiceImpl implements UserService {
 
-    @Autowired
     UserRepository userRepository;
 
-    @Autowired
     RoleRepository roleRepository;
 
-    @Autowired
     PasswordResetTokenRepository passwordResetTokenRepository;
 
-    @Autowired
     Utils utils;
 
-    @Autowired
     BCryptPasswordEncoder bCryptPasswordEncoder;
 
-    @Autowired
     AmazonSES amazonSES;
+
+    public UserServiceImpl(UserRepository userRepository, RoleRepository roleRepository,
+                           PasswordResetTokenRepository passwordResetTokenRepository, Utils utils,
+                           BCryptPasswordEncoder bCryptPasswordEncoder, AmazonSES amazonSES) {
+        this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
+        this.passwordResetTokenRepository = passwordResetTokenRepository;
+        this.utils = utils;
+        this.bCryptPasswordEncoder = bCryptPasswordEncoder;
+        this.amazonSES = amazonSES;
+    }
 
     @Override
     public UserDto createUser(UserDto user) {
@@ -66,15 +70,16 @@ public class UserServiceImpl implements UserService {
             user.getAddresses().set(i, addressDTO);
         }
 
-
         ModelMapper modelMapper = new ModelMapper();
         UserEntity userEntity = modelMapper.map(user, UserEntity.class);
 
         userEntity.setEncryptedPassword(bCryptPasswordEncoder.encode(user.getPassword()));
+
         String generateId = utils.generateId();
 
         userEntity.setUserId(generateId);
-        userEntity.setEmailVerificationToken(utils.generateEmailVerificationToken(generateId));
+        userEntity.setEmailVerificationToken(utils.generateToken(generateId,
+                SecurityConstants.EMAIL_VERIFICATION_EXPIRATION_TIME));
         userEntity.setEmailVerificationStatus(false);
 
         List<AddressEntity> addressEntityList
@@ -114,8 +119,17 @@ public class UserServiceImpl implements UserService {
     public UserDto getUserByUserId(String userId) {
         UserDto returnValue = new UserDto();
         UserEntity userByEmail = userRepository.findByUserId(userId);
+
         if (userByEmail == null) throw new UserServiceException(ErrorMessages.NO_RECORD_FOUND.getErrorMessage());
-        BeanUtils.copyProperties(userByEmail, returnValue);
+
+        ModelMapper modelMapper = new ModelMapper();
+        returnValue = modelMapper.map(userByEmail, UserDto.class);
+
+        returnValue.setAddresses(modelMapper
+                .map(userByEmail.getAddressEntityList(),
+                        new TypeToken<List<AddressDTO>>() {
+                        }.getType()));
+
         return returnValue;
     }
 
@@ -128,8 +142,16 @@ public class UserServiceImpl implements UserService {
         userEntity.setFirstName(userDto.getFirstName());
         userEntity.setLastName(userDto.getLastName());
 
-        UserEntity save = userRepository.save(userEntity);
-        BeanUtils.copyProperties(save, returnValue);
+        UserEntity savedUser = userRepository.save(userEntity);
+        ModelMapper modelMapper = new ModelMapper();
+
+        returnValue = modelMapper.map(savedUser, UserDto.class);
+
+        returnValue.setAddresses(modelMapper
+                .map(savedUser.getAddressEntityList(),
+                        new TypeToken<List<AddressDTO>>() {
+                        }.getType()));
+
         return returnValue;
     }
 
@@ -182,7 +204,7 @@ public class UserServiceImpl implements UserService {
             return false;
         }
 
-        String token = new Utils().generatePasswordResetToken(userEntity.getUserId());
+        String token = new Utils().generateToken(userEntity.getUserId(), SecurityConstants.PASSWORD_RESET_EXPIRATION_TIME);
 
         PasswordResetTokenEntity passwordResetTokenEntity = new PasswordResetTokenEntity();
         passwordResetTokenEntity.setToken(token);

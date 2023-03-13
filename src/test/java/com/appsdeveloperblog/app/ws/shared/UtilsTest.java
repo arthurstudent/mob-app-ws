@@ -1,5 +1,6 @@
 package com.appsdeveloperblog.app.ws.shared;
 
+import com.appsdeveloperblog.app.ws.security.SecurityConstants;
 import com.appsdeveloperblog.app.ws.shared.utils.Utils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,7 +33,8 @@ class UtilsTest {
 
     @Test
     final void testHasTokenNotExpired() {
-        String generateEmailVerificationToken = utils.generateEmailVerificationToken("0123456789");
+        String generateEmailVerificationToken = utils.generateToken("0123456789",
+                SecurityConstants.EMAIL_VERIFICATION_EXPIRATION_TIME);
 
         assertNotNull(generateEmailVerificationToken);
 

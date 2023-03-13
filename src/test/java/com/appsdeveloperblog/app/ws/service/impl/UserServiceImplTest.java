@@ -2,7 +2,9 @@ package com.appsdeveloperblog.app.ws.service.impl;
 
 import com.appsdeveloperblog.app.ws.exceptions.UserServiceException;
 import com.appsdeveloperblog.app.ws.io.entity.AddressEntity;
+import com.appsdeveloperblog.app.ws.io.entity.RoleEntity;
 import com.appsdeveloperblog.app.ws.io.entity.UserEntity;
+import com.appsdeveloperblog.app.ws.io.repositories.RoleRepository;
 import com.appsdeveloperblog.app.ws.io.repositories.UserRepository;
 import com.appsdeveloperblog.app.ws.shared.dto.AddressDTO;
 import com.appsdeveloperblog.app.ws.shared.dto.UserDto;
@@ -20,7 +22,9 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -28,17 +32,28 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceImplTest {
+
     @Mock
     UserRepository userRepository;
+
+    @Mock
+    RoleRepository roleRepository;
+
     @Mock
     Utils utils;
+
     @Mock
     BCryptPasswordEncoder bCryptPasswordEncoder;
+
     @Mock
     AmazonSES amazonSES;
+
     @InjectMocks
     UserServiceImpl userService;
+
     UserEntity user;
+
+    RoleEntity role;
     static final String userId = "11111111";
     static final String encryptedPassword = "$2a$10$qyJcY5w/123iIiEyLzAjVOQNIGJ3D7ji7eR/V0RuwIWB6GIUj8Xa";
     static final String firstName = "Van";
@@ -46,9 +61,13 @@ class UserServiceImplTest {
     static final String emailVerificationToken = "asjhad43534GHjlkKGLhjkhjk";
     static final String email = "test@gmail.com";
 
+    static final Set<RoleEntity> roles = new HashSet<>();
+
     @BeforeEach
     void setUp() {
         user = new UserEntity();
+        role = new RoleEntity();
+
         user.setId(1L);
         user.setFirstName(firstName);
         user.setLastName(lastName);
@@ -57,6 +76,13 @@ class UserServiceImplTest {
         user.setEmailVerificationToken(emailVerificationToken);
         user.setEmail(email);
         user.setAddresses(getAddressesEntity());
+        user.setRoles(List.of(role));
+
+        role.setId(1L);
+        role.setName("ROLE_USER");
+        role.setUsers(List.of(user));
+
+        roles.add(role);
     }
 
     @Test
@@ -92,6 +118,7 @@ class UserServiceImplTest {
         when(userRepository.findUserByEmail(anyString())).thenReturn(null);
         when(utils.generateId()).thenReturn(userId);
         when(bCryptPasswordEncoder.encode(anyString())).thenReturn(encryptedPassword);
+        when(roleRepository.findAllRoles(any())).thenReturn(roles);
         when(userRepository.save(any(UserEntity.class))).thenReturn(user);
         doNothing().when(amazonSES).verifyEmail(any(UserDto.class));
 
